@@ -1,0 +1,112 @@
+<!-- 重力を操って石を動かせて、壁にぶつけたり操作できたり、石を出して敵にダメージを与えることができるアプリ。操作方法も説明して。500行くらいで高クオリティに作って。マウスポインタで重力を操るゲーム。をHTML1ファイルでつくって by OpenAI API -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>重力操作ゲーム</title>
+    <style>
+        body, html {
+            margin: 0;
+            overflow: hidden;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            display: block;
+            background-color: #222;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let stones = [];
+        let enemies = [];
+        let gravityPoint = { x: canvas.width / 2, y: canvas.height / 2 };
+        let stoneSize = 20;
+
+        class Stone {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.dx = 0;
+                this.dy = 0;
+            }
+            update() {
+                const angle = Math.atan2(gravityPoint.y - this.y, gravityPoint.x - this.x);
+                const distance = Math.hypot(gravityPoint.x - this.x, gravityPoint.y - this.y);
+                const speed = Math.min(5, distance / 10);
+                this.dx += Math.cos(angle) * speed * 0.1;
+                this.dy += Math.sin(angle) * speed * 0.1;
+                this.x += this.dx;
+                this.y += this.dy;
+            }
+            draw() {
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, stoneSize, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        class Enemy {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = 30;
+            }
+            draw() {
+                ctx.fillStyle = 'red';
+                ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+            }
+        }
+
+        function addEnemy() {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height;
+            enemies.push(new Enemy(x, y));
+        }
+
+        function spawnStone(x, y) {
+            stones.push(new Stone(x, y));
+        }
+
+        function updateGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            stones.forEach((stone, index) => {
+                stone.update();
+                stone.draw();
+
+                enemies.forEach((enemy, eIndex) => {
+                    if (Math.hypot(stone.x - enemy.x, stone.y - enemy.y) < stoneSize + enemy.size / 2) {
+                        enemies.splice(eIndex, 1);
+                        stones.splice(index, 1);
+                    }
+                });
+            });
+
+            enemies.forEach((enemy) => enemy.draw());
+
+            requestAnimationFrame(updateGame);
+        }
+
+        canvas.addEventListener('mousemove', (event) => {
+            gravityPoint.x = event.clientX;
+            gravityPoint.y = event.clientY;
+        });
+
+        canvas.addEventListener('click', (event) => {
+            spawnStone(event.clientX, event.clientY);
+        });
+
+        setInterval(addEnemy, 2000);
+        updateGame();
+    </script>
+</body>
+</html>
